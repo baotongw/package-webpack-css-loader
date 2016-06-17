@@ -76,7 +76,11 @@ var pathResolve = {
 
         // 所有的引用都先检查是否是相对路径
         path = this.relativePathCheck(referencePath, parentPath);
-        
+
+        if(this.isOniuiPath(parentPath)){
+            return path;
+        }
+
         // 处理alias        
         if (!path && patterns.isAlias.test(referencePath)) {
             path = this.aliasCheck(referencePath);
@@ -88,6 +92,10 @@ var pathResolve = {
         }
 
         return path || referencePath;
+    },
+    isOniuiPath:function(path){
+        path = path || '';
+        return path.indexOf('/fekit_modules/oniui/src') !== -1 || path.indexOf('\\fekit_modules\\oniui\\src') !== -1;
     }
 }
 
@@ -112,6 +120,11 @@ function checkDependence(source, env, isSubCheck, filePath, result) {
         for (var i = 0, dependPath = null; i < dependence.length; i++) {
             dependence[i].match(patterns.requirePattern);
             dependPath = pathResolve.getFullPath(RegExp.$1, filePath);
+
+            //oniui组件没有样式就不处理了
+            if(!dependPath && pathResolve.isOniuiPath(filePath)){
+                continue;
+            }
 
             var content = filesys.readFileSync(dependPath, config.readType);
             checkDependence(content, env, true, dependPath, result);

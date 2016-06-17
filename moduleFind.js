@@ -7,26 +7,27 @@ var patterns = {
 }
 
 function ModuleFind(moduleDirectories) {
-	this.moduleDirectories = moduleDirectories;
 
 	this.root = process.cwd();
 
 	this.sourceCfg = {
-		'fekit_module': {
+		'fekit_modules': {
 			config: 'fekit.config',
 			defaultEntry: '/src/index.js'
 		},
-		'node_module': {
+		'node_modules': {
 			config: 'package.json',
 			defaultEntry: '/index.js'
 		}
 	}
+
+	this.moduleDirectories = moduleDirectories || ['fekit_modules','node_modules'] ;
 }
 
-ModuleFind.prototype.readConfig = function(packageType, packageConfig) {
-	var dirPath = pathsys.join(this.root, packageType, packageConfig.config);
+ModuleFind.prototype.readConfig = function(packagePath, packageConfig) {
+	var dirPath = pathsys.join(packagePath, packageConfig.config);
 
-	var config = filesys.readFileSync(dirPath);
+	var config = filesys.readFileSync(dirPath,'utf-8');
 	// remove comment
 	config.replace(patterns.singleLineComment, '\n').replace(patterns.multiLineComment, '\n');
 
@@ -35,27 +36,32 @@ ModuleFind.prototype.readConfig = function(packageType, packageConfig) {
 
 // get module index file path
 ModuleFind.prototype.getEntry = function(moduleName) {
-	var dir,
+	var packagePath,
 		stat,
 		packageType,
 		packageConfig,
-		self = this;
+		self = this,
+		moduleRoots = this.moduleDirectories,
+		index = 0,
+		len = moduleRoots.length,
+		tmpModuleRoot;
 
-	this.moduleDirectories.forEach(function(v) {
-		dir = pathsys.join(self.root, v, moduleName);
 
-		stat = filesys.statSync(dir);
+	for(; index < len; index++){
+		tmpModuleRoot = moduleRoots[index];
+		packagePath = pathsys.join(self.root,tmpModuleRoot,moduleName);
+		stat = filesys.statSync(packagePath);
 
 		if (stat.isDirectory()) {
-			packageType = v;
-			packageConfig = self.sourceCfg[v];
-			return true;
+			packageType = tmpModuleRoot;
+			packageConfig = self.sourceCfg[tmpModuleRoot];
+			break;
 		}
-	});
+	}
 
-	var config = this.readConfig(packageType, packageConfig);
+	var config = this.readConfig(packagePath, packageConfig);
 
-	return pathsys.join(this.root, packageType, this.config.main || config.defaultEntry);
+	return pathsys.join(packagePath, config.main || packageConfig.defaultEntry);
 }
 
 module.exports = new ModuleFind();
