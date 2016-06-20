@@ -12,21 +12,23 @@ function ModuleFind(moduleDirectories) {
 	this.root = process.cwd();
 
 	this.sourceCfg = {
-		'fekit_module': {
+		'fekit_modules': {
 			config: 'fekit.config',
-			defaultEntry: '/src/index.js'
+			defaultEntry: '/src/index.css'
 		},
-		'node_module': {
+		'node_modules': {
 			config: 'package.json',
 			defaultEntry: '/index.js'
 		}
 	}
 }
 
-ModuleFind.prototype.readConfig = function(packageType, packageConfig) {
-	var dirPath = pathsys.join(this.root, packageType, packageConfig.config);
+ModuleFind.prototype.readConfig = function(packageType, moduleName, packageConfig) {
+	var dirPath = pathsys.join(this.root, packageType, moduleName, packageConfig.config);
 
-	var config = filesys.readFileSync(dirPath);
+	var config = filesys.readFileSync(dirPath, {
+		encoding: 'utf-8'
+	});
 	// remove comment
 	config.replace(patterns.singleLineComment, '\n').replace(patterns.multiLineComment, '\n');
 
@@ -44,18 +46,20 @@ ModuleFind.prototype.getEntry = function(moduleName) {
 	this.moduleDirectories.forEach(function(v) {
 		dir = pathsys.join(self.root, v, moduleName);
 
-		stat = filesys.statSync(dir);
+		try {
+			stat = filesys.statSync(dir);
 
-		if (stat.isDirectory()) {
-			packageType = v;
-			packageConfig = self.sourceCfg[v];
-			return true;
-		}
+			if (stat.isDirectory()) {
+				packageType = v;
+				packageConfig = self.sourceCfg[v];
+				
+			}
+		} catch (error) { }
 	});
 
-	var config = this.readConfig(packageType, packageConfig);
+	var config = this.readConfig(packageType, moduleName, packageConfig);
 
-	return pathsys.join(this.root, packageType, this.config.main || config.defaultEntry);
+	return pathsys.join(this.root, packageType, moduleName, config.main || packageConfig.defaultEntry);
 }
 
-module.exports = new ModuleFind();
+module.exports = ModuleFind;
