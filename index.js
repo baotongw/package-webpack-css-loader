@@ -12,7 +12,7 @@ var moduleFindInstance;
 
 //这里是专门针对css的loader，所以需要同时支持fekit的require和常规的import
 var patterns = {
-    requirePattern: /(?:require|@import\surl)\(['|"]?(.*?)['|"]?\);*/igm,
+    requirePattern: /.*?(?:require|@import\surl)\(\s*?['|"](.*?)['|"]\s*?\)/gim,
     cssCommentPattern: /\/\*.+\*\//gm,
     isRelative: /[^\.{1,2}.+|[\w_-]+?\.(css|less|scss)$]/,
     isAlias: /(\w+?)(\/.+)/,
@@ -23,8 +23,9 @@ var pathResolve = {
     extensionList: ['.css', '.less', '.scss'],
     relativePathCheck: function(path, parentPath) {
         parentPath = pathsys.dirname(parentPath);
+        var resolvePath = pathsys.join(parentPath, path);
 
-        return this.pathExistsCheck(pathsys.resolve(parentPath, path));
+        return this.pathExistsCheck(resolvePath);
     },
     aliasCheck: function(path) {
         var alias = null,
@@ -121,7 +122,8 @@ function checkDependence(source, env, isSubCheck, filePath, result) {
     if (dependence) {
         for (var i = 0, dependPath = null; i < dependence.length; i++) {
             dependence[i].match(patterns.requirePattern);
-            dependPath = pathResolve.getFullPath(RegExp.$1, filePath);
+            dependPath = RegExp.$1;
+            dependPath = pathResolve.getFullPath(dependPath, filePath);
 
             //oniui组件没有样式就不处理了
             if (!dependPath && pathResolve.isOniuiPath(filePath)) {
