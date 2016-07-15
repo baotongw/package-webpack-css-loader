@@ -102,19 +102,14 @@ var pathResolve = {
     }
 }
 
-var mapping = {}
+var mapping = {},
+    result = [];
 
-function checkDependence(source, env, isSubCheck, filePath, result) {
+function checkDependence(source, isSubCheck, filePath) {
     var self = this;
-
-    result = result || [];
 
     if (!source) {
         return source;
-    }
-
-    if (env === 'prd') {
-        source = source.replace(patterns.cssCommentPattern, '');
     }
 
     var dependence = source.match(patterns.requirePattern);
@@ -144,7 +139,6 @@ function checkDependence(source, env, isSubCheck, filePath, result) {
     }
 
     if (isSubCheck === false) {
-        mapping = null;
         return result;
     }
 }
@@ -156,8 +150,10 @@ module.exports = function(source) {
     // this loader can be cached
     this.cacheable();
 
-    var query = loaderUtils.parseQuery(this.query);
-    var result = checkDependence.call(this, source, query.dev, false, this.resourcePath);
+    // update global data
+    mapping = {};
+    result = [];
+    var result = checkDependence.call(this, source, false, this.resourcePath);
 
     var output = {
         type: 'css',
