@@ -12,7 +12,7 @@ var moduleFindInstance;
 
 //这里是专门针对css的loader，所以需要同时支持fekit的require和常规的import
 var patterns = {
-    requirePattern: /.*?(?:require|@import\surl)\(\s*?['|"](.*?)['|"]\s*?\)/gim,
+    requirePattern: /.*?(?:require|@import\surl)\(\s*?['|"]?(.*?)['|"]?\s*?\)/gim,
     cssCommentPattern: /\/\*.+\*\//gm,
     isRelative: /[^\.{1,2}.+|[\w_-]+?\.(css|less|scss)$]/,
     isAlias: /(\w+?)(\/.+)/,
@@ -102,10 +102,12 @@ var pathResolve = {
     }
 }
 
+var mapping = {}
+
 function checkDependence(source, env, isSubCheck, filePath, result) {
     var self = this;
 
-    result = result || {};
+    result = result || [];
 
     if (!source) {
         return source;
@@ -136,11 +138,13 @@ function checkDependence(source, env, isSubCheck, filePath, result) {
     }
 
     // 确保不会重复
-    if (!result[filePath]) {
-        result[filePath] = source;
+    if (!mapping[filePath]) {
+        mapping[filePath] = true;
+        result.push(source);
     }
 
     if (isSubCheck === false) {
+        mapping = null;
         return result;
     }
 }
@@ -153,17 +157,13 @@ module.exports = function(source) {
     this.cacheable();
 
     var query = loaderUtils.parseQuery(this.query);
-    var requireMapping = checkDependence.call(this, source, query.dev, false, this.resourcePath);
+    var result = checkDependence.call(this, source, query.dev, false, this.resourcePath);
 
     var output = {
         type: 'css',
         path: this.resourcePath,
-        content: []
+        content: result
     }
-
-    Object.keys(requireMapping).forEach(function(key) {
-        output.content.push(requireMapping[key]);
-    });
 
     return '(' + JSON.stringify(output) + ')';
 }
