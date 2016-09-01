@@ -111,7 +111,10 @@ function checkDependence(source, isSubCheck, filePath) {
     if (!source) {
         return source;
     }
-
+    
+    // 干掉注释
+    source = source.replace(patterns.cssCommentPattern, '');
+    // 获取require
     var dependence = source.match(patterns.requirePattern);
     // 干掉css中的require
     source = source.replace(patterns.requirePattern, '');
