@@ -128,7 +128,7 @@ function checkDependence(source, isSubCheck, filePath) {
             }
 
             var content = filesys.readFileSync(dependPath, config.readType);
-            checkDependence(content, env, true, dependPath, result);
+            checkDependence(content, true, dependPath);
         }
     }
 
